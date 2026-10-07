@@ -28,6 +28,7 @@ export const HomePage: React.FC<HomePageProps> = ({ navigate }) => {
 
   const medicines = db.getMedicines();
   const categories = db.getCategories();
+  const notices = db.getNotices().filter((n) => n.is_published);
 
   const handleAdd = (med: Medicine) => {
     addToCart(med, 1);
@@ -137,6 +138,49 @@ export const HomePage: React.FC<HomePageProps> = ({ navigate }) => {
           </div>
         </div>
       </section>
+
+      {/* Public Notices & Healthcare Announcements */}
+      {notices.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Pharmacy Notices & Health Updates</h2>
+              <p className="text-xs text-slate-500">Official circulars, screening camps, and offers</p>
+            </div>
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+              Live Announcements
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {notices.map((n) => (
+              <div
+                key={n.id}
+                className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col justify-between"
+              >
+                {n.media_url && (
+                  <div className="aspect-video w-full bg-slate-100 overflow-hidden">
+                    <img
+                      src={n.media_url}
+                      alt={n.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="p-4 space-y-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    {n.category}
+                  </span>
+                  <h3 className="font-bold text-xs text-slate-900 leading-snug">{n.title}</h3>
+                  <p className="text-[11px] text-slate-500 line-clamp-3 leading-relaxed">
+                    {n.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Popular Categories */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">

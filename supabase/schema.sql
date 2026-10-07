@@ -373,9 +373,40 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
--- Public can read active medicines & categories for online shopping
+-- 23. Notices & Announcements Table
+CREATE TABLE IF NOT EXISTS notices (
+  id TEXT PRIMARY KEY DEFAULT ('notc-' || extract(epoch from now())::bigint),
+  title TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'General',
+  content TEXT NOT NULL,
+  media_url TEXT,
+  media_type TEXT DEFAULT 'photo',
+  is_pinned BOOLEAN DEFAULT false,
+  is_published BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE notices ENABLE ROW LEVEL SECURITY;
+
+-- 24. Media Gallery (Photos, Videos, Notices, Attachments)
+CREATE TABLE IF NOT EXISTS media_gallery (
+  id TEXT PRIMARY KEY DEFAULT ('med-' || extract(epoch from now())::bigint),
+  title TEXT NOT NULL,
+  description TEXT,
+  file_url TEXT NOT NULL,
+  media_type TEXT NOT NULL DEFAULT 'photo', -- 'photo', 'video', 'notice', 'document'
+  file_size BIGINT,
+  tag TEXT,
+  uploaded_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE media_gallery ENABLE ROW LEVEL SECURITY;
+
+-- Public can read active medicines & categories & notices for public display
 CREATE POLICY "Public Read Active Medicines" ON medicines FOR SELECT USING (status = 'Active');
 CREATE POLICY "Public Read Categories" ON categories FOR SELECT USING (is_active = true);
+CREATE POLICY "Public Read Published Notices" ON notices FOR SELECT USING (is_published = true);
+CREATE POLICY "Public Read Media Gallery" ON media_gallery FOR SELECT USING (true);
 CREATE POLICY "Public Insert Orders" ON orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public Read Own Orders" ON orders FOR SELECT USING (true);
 
@@ -396,3 +427,87 @@ CREATE POLICY "Staff Full Access Orders" ON orders FOR ALL TO authenticated USIN
 CREATE POLICY "Staff Full Access Logs" ON audit_logs FOR ALL TO authenticated USING (true);
 CREATE POLICY "Staff Full Access Notifications" ON notifications FOR ALL TO authenticated USING (true);
 CREATE POLICY "Staff Full Access Settings" ON settings FOR ALL TO authenticated USING (true);
+CREATE POLICY "Staff Full Access Notices" ON notices FOR ALL TO authenticated USING (true);
+CREATE POLICY "Staff Full Access Media" ON media_gallery FOR ALL TO authenticated USING (true);
+
+-- ============================================================================
+-- Supabase Storage Buckets Setup (Media, Photos, Videos, Notices, Prescriptions)
+-- ============================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES 
+  ('media', 'media', true),
+  ('photos', 'photos', true),
+  ('videos', 'videos', true),
+  ('notices', 'notices', true),
+  ('prescriptions', 'prescriptions', true)
+ON CONFLICT (id) DO UPDATE SET public = EXCLUDED.public;
+
+-- Allow public read access on storage objects in these buckets
+CREATE POLICY "Public Access Storage Objects" ON storage.objects
+  FOR SELECT USING (bucket_id IN ('media', 'photos', 'videos', 'notices', 'prescriptions'));
+
+-- Allow upload access to public and authenticated users for prescriptions and media
+CREATE POLICY "Allow All Insert Storage Objects" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id IN ('media', 'photos', 'videos', 'notices', 'prescriptions'));
+
+-- ============================================================================
+-- Initial Seed Data (Categories, Generics, Suppliers, Medicines, Batches, Notices)
+-- ============================================================================
+
+-- 1. Categories
+INSERT INTO categories (id, name, slug, description, is_active) VALUES
+  ('cat-1', 'Analgesic & Antipyretic', 'analgesic', 'Pain relief and fever reducers', true),
+  ('cat-2', 'Antibiotic', 'antibiotic', 'Bacterial infection treatments', true),
+  ('cat-3', 'Antacid & Antiulcer', 'antacid', 'Gastric acid and ulcer care', true),
+  ('cat-4', 'Antihistamine', 'antihistamine', 'Allergy and cold relief', true),
+  ('cat-5', 'Diabetes Care', 'diabetes', 'Insulin and oral hypoglycemics', true),
+  ('cat-6', 'Blood Pressure & Cardiac', 'cardiac', 'Hypertension and heart health', true),
+  ('cat-7', 'Vitamins & Supplements', 'vitamins', 'Nutritional and multivitamin aids', true),
+  ('cat-8', 'Respiratory & Asthma', 'respiratory', 'Bronchodilators & inhalers', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Generics
+INSERT INTO generics (id, name, description, indication, side_effects, status) VALUES
+  ('gen-1', 'Paracetamol', 'Analgesic & antipyretic agent', 'Fever, mild pain, headache', 'Rare at therapeutic dose', 'Active'),
+  ('gen-2', 'Omeprazole', 'Proton-pump inhibitor (PPI)', 'GERD, peptic ulcer, acid reflux', 'Abdominal pain, headache', 'Active'),
+  ('gen-3', 'Esomeprazole', 'S-isomer of omeprazole PPI', 'Erosive esophagitis, acid reflux', 'Nausea, flatulence', 'Active'),
+  ('gen-4', 'Ciprofloxacin', 'Fluoroquinolone antibiotic', 'Urinary tract infections, respiratory infections', 'Tendinitis risk, dizziness', 'Active'),
+  ('gen-5', 'Montelukast', 'Leukotriene receptor antagonist', 'Chronic asthma, allergic rhinitis', 'Headache', 'Active'),
+  ('gen-6', 'Metformin Hydrochloride', 'Biguanide antihyperglycemic', 'Type 2 diabetes mellitus', 'GI upset', 'Active')
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. Suppliers
+INSERT INTO suppliers (id, name, company, phone, email, address, contact_person, opening_balance, current_balance) VALUES
+  ('sup-1', 'Square Pharmaceuticals Ltd.', 'Square Group Bangladesh', '+880 1711-234567', 'distribution@squarepharma.com.bd', 'Square Centre, 48 Mohakhali C/A, Dhaka-1212', 'Md. Rafiqul Islam', 0, 14500),
+  ('sup-2', 'Beximco Pharmaceuticals Ltd.', 'Beximco Group', '+880 1712-345678', 'supply@beximcopharma.com', '19 Dhanmondi R/A, Road 7, Dhaka-1205', 'Tanvir Hossain', 0, 8200),
+  ('sup-3', 'Incepta Pharmaceuticals Ltd.', 'Incepta Group', '+880 1713-456789', 'sales@inceptapharma.com', '40 Shahid Tajuddin Ahmed Sarani, Tejgaon, Dhaka', 'Kamrul Hasan', 0, 0),
+  ('sup-4', 'Renata Limited', 'Renata Pharma', '+880 1714-567890', 'orders@renata-ltd.com', 'Plot # 1, Milk Vita Road, Section-7, Mirpur, Dhaka', 'Nasim Akhtar', 0, 4200)
+ON CONFLICT (id) DO NOTHING;
+
+-- 4. Medicines
+INSERT INTO medicines (id, name, generic_id, category_id, brand_name, manufacturer, dosage_form, strength, unit, pack_size, barcode, sku, prescription_required, purchase_price, sale_price, min_stock, reorder_level, status) VALUES
+  ('med-1', 'Napa Extra 500mg+65mg', 'gen-1', 'cat-1', 'Napa Extra', 'Beximco Pharmaceuticals Ltd.', 'Tablet', '500mg + 65mg', 'Strip', '10 Tablets/Strip', '894123456001', 'MED-NAP-EXT', false, 22.00, 28.00, 50, 100, 'Active'),
+  ('med-2', 'Seclo 20mg Capsule', 'gen-2', 'cat-3', 'Seclo', 'Square Pharmaceuticals Ltd.', 'Capsule', '20mg', 'Strip', '10 Capsules/Strip', '894123456002', 'MED-SEC-020', false, 48.00, 60.00, 40, 80, 'Active'),
+  ('med-3', 'Maxpro 20mg Tablet', 'gen-3', 'cat-3', 'Maxpro', 'Renata Limited', 'Tablet', '20mg', 'Strip', '14 Tablets/Strip', '894123456003', 'MED-MAX-020', false, 85.00, 105.00, 30, 60, 'Active'),
+  ('med-4', 'Ciprocin 500mg Tablet', 'gen-4', 'cat-2', 'Ciprocin', 'Square Pharmaceuticals Ltd.', 'Tablet', '500mg', 'Strip', '10 Tablets/Strip', '894123456004', 'MED-CIP-500', true, 110.00, 140.00, 25, 50, 'Active'),
+  ('med-5', 'Monas 10mg Tablet', 'gen-5', 'cat-8', 'Monas', 'The ACME Laboratories Ltd.', 'Tablet', '10mg', 'Strip', '10 Tablets/Strip', '894123456005', 'MED-MON-010', true, 125.00, 160.00, 30, 70, 'Active')
+ON CONFLICT (id) DO NOTHING;
+
+-- 5. Batches (FEFO Inventory Core)
+INSERT INTO batches (id, medicine_id, batch_number, mfg_date, expiry_date, purchase_price, sale_price, quantity, remaining_quantity, supplier_id) VALUES
+  ('bat-1', 'med-1', 'NP-24A01', '2025-01-15', '2027-01-14', 22.00, 28.00, 150, 85, 'sup-2'),
+  ('bat-2', 'med-1', 'NP-25B02', '2025-06-10', '2027-06-09', 22.00, 28.00, 200, 200, 'sup-2'),
+  ('bat-3', 'med-2', 'SC-24K09', '2024-11-01', '2026-10-31', 48.00, 60.00, 100, 18, 'sup-1'),
+  ('bat-4', 'med-2', 'SC-25D14', '2025-04-10', '2027-04-09', 48.00, 60.00, 120, 110, 'sup-1'),
+  ('bat-5', 'med-3', 'MX-25A11', '2025-02-01', '2027-08-31', 85.00, 105.00, 90, 52, 'sup-4'),
+  ('bat-7', 'med-4', 'CP-25F18', '2025-06-01', '2027-05-31', 110.00, 140.00, 60, 45, 'sup-1')
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. Notices
+INSERT INTO notices (id, title, category, content, media_url, is_pinned, is_published) VALUES
+  ('notc-1', 'Free Blood Pressure & Glucose Screening Every Friday', 'Healthcare', 'Visit our Gulshan branch for free complimentary blood pressure and random blood sugar checkups supervised by registered pharmacists.', 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80', true, true),
+  ('notc-2', 'Seasonal Dengue Prevention & Hydration Guidelines', 'Regulatory', 'Important public health advisory: Use DGDA approved paracetamol only and avoid NSAIDs without doctor consultation during fever.', 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80', false, true),
+  ('notc-3', '10% Cashback on bKash & Nagad Online Payments', 'Discount & Offer', 'Get 10% instant discount up to ৳100 on all online medicine deliveries paid via bKash or Nagad.', 'https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&auto=format&fit=crop&q=80', false, true)
+ON CONFLICT (id) DO NOTHING;
+
+

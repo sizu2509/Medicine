@@ -823,3 +823,65 @@ export const initialAuditLogs: AuditLog[] = [
     created_at: '2026-10-07T08:00:00Z',
   },
 ];
+
+export const initialNotices: any[] = [
+  {
+    id: 'notc-1',
+    title: 'Free Blood Pressure & Glucose Screening Every Friday',
+    category: 'Healthcare',
+    content: 'Visit our Gulshan branch for free complimentary blood pressure and random blood sugar checkups supervised by registered pharmacists.',
+    media_url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80',
+    media_type: 'photo',
+    is_pinned: true,
+    is_published: true,
+    created_at: '2026-10-05T10:00:00Z',
+  },
+  {
+    id: 'notc-2',
+    title: 'Seasonal Dengue Prevention & Hydration Guidelines',
+    category: 'Regulatory',
+    content: 'Important public health advisory: Use DGDA approved paracetamol only and avoid NSAIDs without doctor consultation during fever.',
+    media_url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80',
+    media_type: 'photo',
+    is_pinned: false,
+    is_published: true,
+    created_at: '2026-10-06T12:00:00Z',
+  },
+  {
+    id: 'notc-3',
+    title: '10% Cashback on bKash & Nagad Online Payments',
+    category: 'Discount & Offer',
+    content: 'Get 10% instant discount up to ৳100 on all online medicine deliveries paid via bKash or Nagad.',
+    media_url: 'https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&auto=format&fit=crop&q=80',
+    media_type: 'photo',
+    is_pinned: false,
+    is_published: true,
+    created_at: '2026-10-07T09:00:00Z',
+  },
+];
+
+export const initialMedia: any[] = [
+  {
+    id: 'med-1',
+    title: 'Pharmacy Cleanroom & Cold Storage Facility',
+    description: '24/7 temperature monitored vaccines and insulin storage unit.',
+    file_url: 'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?w=800&auto=format&fit=crop&q=80',
+    media_type: 'photo',
+    file_size: 1024000,
+    tag: 'Facility',
+    uploaded_by: 'Super Admin',
+    created_at: '2026-10-05T08:00:00Z',
+  },
+  {
+    id: 'med-2',
+    title: 'Certified Model Pharmacy Storefront',
+    description: 'Gulshan branch customer reception and automated dispensing counter.',
+    file_url: 'https://images.unsplash.com/photo-1576602976047-174e57a47881?w=800&auto=format&fit=crop&q=80',
+    media_type: 'photo',
+    file_size: 2048000,
+    tag: 'Storefront',
+    uploaded_by: 'Super Admin',
+    created_at: '2026-10-06T09:00:00Z',
+  },
+];
+

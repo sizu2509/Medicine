@@ -29,6 +29,7 @@ import {
   ChevronDown,
   Sparkles,
   ShoppingBag,
+  Image,
 } from 'lucide-react';
 import { useAuth, PermissionKey } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -99,6 +100,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Overview' },
+    { id: 'media-notices', label: 'Media & Notices', icon: Image, group: 'Overview' },
     { id: 'pos', label: 'POS Terminal', icon: ShoppingBag, permission: 'manage_sales', group: 'Sales & POS' },
     { id: 'sales', label: 'Sales & Invoices', icon: Receipt, permission: 'manage_sales', group: 'Sales & POS' },
     { id: 'sales-returns', label: 'Sales Returns', icon: RotateCcw, permission: 'manage_returns', group: 'Sales & POS' },

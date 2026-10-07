@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Database, CheckCircle2, AlertCircle, Copy, Check, RefreshCw, Key, ShieldCheck } from 'lucide-react';
 import { Modal } from './Modal';
-import { checkSupabaseConnection, setCustomSupabaseCredentials } from '../../lib/supabase';
+import { checkSupabaseConnection, setCustomSupabaseCredentials, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '../../lib/supabase';
 import { db } from '../../services/db';
 
 interface SupabaseStatusModalProps {
@@ -10,8 +10,8 @@ interface SupabaseStatusModalProps {
 }
 
 export const SupabaseStatusModal: React.FC<SupabaseStatusModalProps> = ({ isOpen, onClose }) => {
-  const [url, setUrl] = useState(() => localStorage.getItem('medistock_supabase_url') || import.meta.env.VITE_SUPABASE_URL || '');
-  const [key, setKey] = useState(() => localStorage.getItem('medistock_supabase_key') || import.meta.env.VITE_SUPABASE_ANON_KEY || '');
+  const [url, setUrl] = useState(() => localStorage.getItem('medistock_supabase_url') || import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL);
+  const [key, setKey] = useState(() => localStorage.getItem('medistock_supabase_key') || import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY);
   const [status, setStatus] = useState<{ connected: boolean; message: string; hasTables?: boolean }>({
     connected: false,
     message: 'Checking connection...',

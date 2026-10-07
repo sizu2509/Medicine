@@ -29,6 +29,7 @@ import { ReportsPage } from './pages/admin/ReportsPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
 import { AuditLogsPage } from './pages/admin/AuditLogsPage';
 import { UsersPage } from './pages/admin/UsersPage';
+import { MediaNoticesPage } from './pages/admin/MediaNoticesPage';
 
 // Public Pages
 import { HomePage } from './pages/public/HomePage';
@@ -83,6 +84,8 @@ function MainApp() {
     switch (adminTab) {
       case 'dashboard':
         return <DashboardPage onNavigateTab={setAdminTab} />;
+      case 'media-notices':
+        return <MediaNoticesPage />;
       case 'pos':
         return <POSPage />;
       case 'medicines':

@@ -17,6 +17,8 @@ import {
   Notification,
   AuditLog,
   PharmacySettings,
+  Notice,
+  MediaItem,
 } from '../types';
 import {
   initialCategories,
@@ -35,6 +37,8 @@ import {
   defaultSettings,
   initialNotifications,
   initialAuditLogs,
+  initialNotices,
+  initialMedia,
 } from './seedData';
 import { getSupabase } from '../lib/supabase';
 
@@ -59,6 +63,8 @@ interface DBState {
   notifications: Notification[];
   auditLogs: AuditLog[];
   settings: PharmacySettings;
+  notices: Notice[];
+  media: MediaItem[];
 }
 
 const getInitialState = (): DBState => {
@@ -66,7 +72,12 @@ const getInitialState = (): DBState => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          notices: parsed.notices || initialNotices,
+          media: parsed.media || initialMedia,
+        };
       } catch (e) {
         console.error('Error parsing stored database state, restoring defaults:', e);
       }
@@ -91,6 +102,8 @@ const getInitialState = (): DBState => {
     notifications: initialNotifications,
     auditLogs: initialAuditLogs,
     settings: defaultSettings,
+    notices: initialNotices,
+    media: initialMedia,
   };
 };
 
@@ -195,6 +208,8 @@ export const db = {
       notifications: initialNotifications,
       auditLogs: initialAuditLogs,
       settings: defaultSettings,
+      notices: initialNotices,
+      media: initialMedia,
     };
     persist();
   },
@@ -915,5 +930,105 @@ export const db = {
   // Audit Logs
   getAuditLogs(): AuditLog[] {
     return [...currentState.auditLogs];
+  },
+
+  // Notices & Announcements
+  getNotices(): Notice[] {
+    return [...currentState.notices];
+  },
+
+  saveNotice(noticeData: Omit<Notice, 'id' | 'created_at'> & { id?: string }): Notice {
+    if (noticeData.id) {
+      const idx = currentState.notices.findIndex((n) => n.id === noticeData.id);
+      if (idx > -1) {
+        currentState.notices[idx] = {
+          ...currentState.notices[idx],
+          ...noticeData,
+          updated_at: new Date().toISOString(),
+        };
+        logAudit('Notice Updated', 'Notices', `Notice: ${noticeData.title}`, noticeData.id);
+        persist();
+        // Also persist to Supabase if connected
+        const supabase = getSupabase();
+        if (supabase) {
+          supabase.from('notices').upsert(currentState.notices[idx]).then(() => {});
+        }
+        return currentState.notices[idx];
+      }
+    }
+    const newNotice: Notice = {
+      ...noticeData,
+      id: `notc-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    currentState.notices.unshift(newNotice);
+    logAudit('Notice Published', 'Notices', `Notice: ${newNotice.title}`, newNotice.id);
+    persist();
+    // Also persist to Supabase if connected
+    const supabase = getSupabase();
+    if (supabase) {
+      supabase.from('notices').insert(newNotice).then(() => {});
+    }
+    return newNotice;
+  },
+
+  deleteNotice(id: string): boolean {
+    currentState.notices = currentState.notices.filter((n) => n.id !== id);
+    logAudit('Notice Deleted', 'Notices', `Deleted ID: ${id}`, id);
+    persist();
+    const supabase = getSupabase();
+    if (supabase) {
+      supabase.from('notices').delete().eq('id', id).then(() => {});
+    }
+    return true;
+  },
+
+  // Media Gallery (Photos, Videos, Notices, Attachments)
+  getMediaItems(): MediaItem[] {
+    return [...currentState.media];
+  },
+
+  saveMediaItem(itemData: Omit<MediaItem, 'id' | 'created_at'> & { id?: string }): MediaItem {
+    if (itemData.id) {
+      const idx = currentState.media.findIndex((m) => m.id === itemData.id);
+      if (idx > -1) {
+        currentState.media[idx] = {
+          ...currentState.media[idx],
+          ...itemData,
+        };
+        logAudit('Media Updated', 'Media', `Media: ${itemData.title}`, itemData.id);
+        persist();
+        const supabase = getSupabase();
+        if (supabase) {
+          supabase.from('media_gallery').upsert(currentState.media[idx]).then(() => {});
+        }
+        return currentState.media[idx];
+      }
+    }
+    const newItem: MediaItem = {
+      ...itemData,
+      id: `med-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    currentState.media.unshift(newItem);
+    logAudit('Media Uploaded', 'Media', `Uploaded: ${newItem.title} (${newItem.media_type})`, newItem.id);
+    persist();
+    const supabase = getSupabase();
+    if (supabase) {
+      supabase.from('media_gallery').insert(newItem).then(() => {});
+    }
+    return newItem;
+  },
+
+  deleteMediaItem(id: string): boolean {
+    currentState.media = currentState.media.filter((m) => m.id !== id);
+    logAudit('Media Deleted', 'Media', `Deleted ID: ${id}`, id);
+    persist();
+    const supabase = getSupabase();
+    if (supabase) {
+      supabase.from('media_gallery').delete().eq('id', id).then(() => {});
+    }
+    return true;
   },
 };

@@ -415,3 +415,30 @@ export interface CartItem {
   medicine: Medicine;
   quantity: number;
 }
+
+export type MediaType = 'photo' | 'video' | 'notice' | 'document';
+
+export interface Notice {
+  id: string;
+  title: string;
+  category: 'General' | 'Healthcare' | 'Discount & Offer' | 'Regulatory' | 'Holiday';
+  content: string;
+  media_url?: string;
+  media_type?: MediaType;
+  is_pinned: boolean;
+  is_published: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface MediaItem {
+  id: string;
+  title: string;
+  description?: string;
+  file_url: string;
+  media_type: MediaType;
+  file_size?: number;
+  tag?: string;
+  uploaded_by?: string;
+  created_at: string;
+}
